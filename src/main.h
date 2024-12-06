@@ -8,17 +8,14 @@
 #define LOOP 10
 
 // MAIN.C
-int checkSym(float** M, int n);
-int checkSymOMP(float** M, int n);
-
-void matTranspose(float** M, float** T, int n);
-void matTransposeOMP(float** M, float** T, int n);
+void matTranspose(float* M, float* T, int size);
+int checkSym(float* M, int size);
+void matTransposeMPI(float *M, float *T, int matSize, int rank, int num_procs);
 
 // UTILS.C
-void free_matrix(float** matrix, int size);
-float** allocate_sqr_matrix(int size);
-void init_matrix(float** matrix, int size);
-void print_matrix(float** matrix, int size);
+float* allocate_sqr_matrix(int size);
+void init_matrix(float* matrix, int size);
+void print_top_left_block(float *M, int rows, int cols);
 
 int remove_outliers(float data[], float filtered_data[], int data_size, float threshold);
 float calculate_std_dev(float arr[], int array_size, float mean);

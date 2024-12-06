@@ -3,55 +3,38 @@
 #include <math.h>
 #include <stdlib.h>
 
+#define ELEM_TO_PRINT 4
 /// Dynamic allocation of a square [size] x [size] matrix
-float **allocate_sqr_matrix(int size) {
-    float **matrix = malloc(size * sizeof(float *));
+float *allocate_sqr_matrix(int size) {
+    float *matrix = malloc(size * size * sizeof(float));
     if (matrix == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
         exit(1);
     }
-    for (int i = 0; i < size; i++) {
-        matrix[i] = (float *) malloc(size * sizeof(float));
-        if (matrix[i] == NULL) {
-            fprintf(stderr, "Memory allocation failed!\n");
-            exit(1);
-        }
-    }
     return matrix;
 }
 
-/// Dynamic deallocation of a square [size] x [size] matrix
-void free_matrix(float **matrix, int size) {
-    if (matrix != NULL) {
-        for (int i = 0; i < size; i++) {
-            free(matrix[i]);
-        }
-        free(matrix);
-    }
-}
-
 /// Random floats initialization of a square [size] x [size] matrix
-void init_matrix(float **matrix, int size) {
-    // Initialize the matrix with random values
-    //printf("Initializing random %d x %d matrix...\n", size, size);
+void init_matrix(float *matrix, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            matrix[i][j] = (float) rand() / (float) RAND_MAX;
+            matrix[i * size + j] = (float) rand() / (float) RAND_MAX;
         }
     }
-    // printf("Initializaton done\n");
 }
 /// Function that prints a square [size] x [size] matrix
-void print_matrix(float **matrix, int size) {
-    for (int i = 0; i < size; i++) {
-        printf("\t");
-        for(int j = 0; j < size; j++)
-            printf("%.3f ", matrix[i][j]);
+void print_top_left_block(float *M, int rows, int cols) {
+    int blockSize = ELEM_TO_PRINT;
+    for (int i = 0; i < blockSize && i < rows; i++) {
+        for (int j = 0; j < blockSize && j < cols; j++) {
+            printf("%.3f ", M[i * cols + j]);
+        }
         printf("\n");
     }
+
 }
 
-// ------ FUNCTIONS TO CANCEL OUTLIERS AND CALCULATE MEANS -------
+// ------ FUNCTIONS TO REMOVE OUTLIERS AND CALCULATE MEANS -------
 /// Function to calculate mean of the elements inside an array
 float calculate_mean(float arr[], int array_size) {
     float sum = 0.0;

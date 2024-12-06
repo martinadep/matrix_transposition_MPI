@@ -21,115 +21,138 @@ int main(int argc, char **argv) {
     }
     int n = atoi(argv[1]);
 
-    int my_rank, num_procs;
+    int rank, num_procs;
     MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-    printf("%d out of %d procs\n", my_rank, num_procs);
+    printf("%d out of %d procs\n", rank, num_procs);
 
 
-    int matrix_size = pow(2, n);
-    printf("matrix [%d]x[%d]...\n", matrix_size, matrix_size);
-    float **M = allocate_sqr_matrix(matrix_size);
-    float **T = allocate_sqr_matrix(matrix_size);
-    init_matrix(M, matrix_size);
-    /*
-     * Results of the matrix transpositions can be printed:
-     * note that for huge matrix it could be convenient to
-     * print only a small block, like 5x5, to assess correctness
-    */
-    //int elem_to_print = 5;
-    //print_matrix(M, elem_to_print);
+    int size = pow(2, n);
+    printf("matrix [%d]x[%d]...\n", size, size);
+
+    float *M = NULL;
+    float *T = NULL;
+    if (rank == 0) {
+        M = allocate_sqr_matrix(size);
+        T = allocate_sqr_matrix(size);
+        init_matrix(M, size);
+        print_top_left_block(M, size, size);
+        printf("\n");
+    }
 
     //------------------------sequential--------------------------
-    if (checkSym(M, n)) {
-        printf("Matrix is symmetric (seq), no need to transpose\n");
-    } else {
-        double wt1 = omp_get_wtime();
-        matTranspose(M, T, n);
-        double wt2 = omp_get_wtime();
-        double elapsed = wt2 - wt1;
-        printf("mat transpose: %f\n", elapsed);
-        //print_matrix(T, elem_to_print);
+    double wt1, wt2, elapsed;
+    if (rank == 0) {
+        if (checkSym(M, size)) {
+            printf("Matrix is symmetric according to chechSym() - no need to transpose!\n");
+        } else {
+            wt1 = MPI_Wtime();
+            matTranspose(M, T, size);
+            wt2 = MPI_Wtime();
+            elapsed = wt2 - wt1;
+            printf("mat transpose: %f\n", elapsed);
+            print_top_left_block(T, size, size);
+        }
+
+    }
+    //------------------------parallel-MPI--------------------------
+    wt1 = MPI_Wtime();
+    matTransposeMPI(M, T, size, rank, num_procs);
+    wt2 = MPI_Wtime();
+    elapsed = wt2 - wt1;
+    if (rank == 0) {
+        printf("\nmat transposeMPI: %f\n", elapsed);
+        print_top_left_block(T, size, size);
+        free(M);
+        free(T);
     }
 
-    //--------------------------OMP-------------------------------
-    if (checkSymOMP(M, n)) {
-        printf("Matrix is symmetric (omp), no need to transpose\n");
-    } else {
-        double wt1 = omp_get_wtime();
-        matTransposeOMP(M, T, n);
-        double wt2 = omp_get_wtime();
-        double elapsed = wt2 - wt1;
-        printf("mat transpose OMP: %f\n", elapsed);
-        //print_matrix(T, elem_to_print);
-    }
-
-    /*
-     * The correctness of the functions can be checked through
-     * the "test_functions()": it exectutes all the functions
-     * implemented in main.c, over two [4x4] matrices, one is
-     * symmetric and one is asymmetric.
-    */
-   // test_functions();
 
     MPI_Finalize();
-    return 0;
-
     return 0;
 }
 
 
 /// Naive matrix transposition
-void matTranspose(float **M, float **T, int n) {
-    int size = pow(2, n);
-#pragma omp parallel num_threads(1)
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            T[j][i] = M[i][j];
+void matTranspose(float *M, float *T, int size) {
+    int rows = size, cols = size;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            T[j * rows + i] = M[i * cols + j];
         }
     }
 }
 
 /// Naive check symmetry
-int checkSym(float **M, int n) {
-    int size = pow(2, n);
+int checkSym(float *M, int size) {
     int is_sym = 1; // assumed symmetric
-#pragma omp parallel num_threads(1)
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-            if (M[i][j] != M[j][i]) {
+            if (M[j * size + i] != M[i * size + j]) {
                 is_sym = 0; // non-symmetric
             }
         }
     }
     return is_sym;
 }
+void matTransposeMPI(float *M, float *T, int matSize, int rank, int size) {
+    int rowsPerProcess = matSize / size;
+    int extraRows = matSize % size;
 
-/// Parallel OMP matrix transposition
-void matTransposeOMP(float **M, float **T, int n) {
-    int size = pow(2, n);
-    omp_set_num_threads(4);
-#pragma omp parallel for collapse(2)
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            T[j][i] = M[i][j];
+    int startRow = rank * rowsPerProcess;
+    int endRow = startRow + rowsPerProcess;
+    if (rank == size - 1) {
+        endRow += extraRows;
+    }
+
+    int localRows = endRow - startRow;
+
+    // Allocate local buffers
+    float *localM = (float *)malloc(localRows * matSize * sizeof(float));
+    float *localT = (float *)malloc(matSize * matSize * sizeof(float));
+    if (!localM || !localT) {
+        fprintf(stderr, "Memory allocation failed on rank %d\n", rank);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    int *sendCounts = NULL;
+    int *displacements = NULL;
+
+    if (rank == 0) {
+        sendCounts = (int *)malloc(size * sizeof(int));
+        displacements = (int *)malloc(size * sizeof(int));
+
+        for (int i = 0; i < size; i++) {
+            int currentRows = rowsPerProcess + (i == size - 1 ? extraRows : 0);
+            sendCounts[i] = currentRows * matSize;
+            displacements[i] = i * rowsPerProcess * matSize;
         }
     }
-}
 
-/// Parallel OMP check symmetry
-int checkSymOMP(float **M, int n) {
-    int size = pow(2, n);
-    int is_sym = 1; // assumed symmetric
-#pragma omp parallel for collapse(2) reduction(&&:is_sym)
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            if (M[i][j] != M[j][i]) {
-                is_sym = 0; // non-symmetric
-            }
+    // Scatter rows of M
+    MPI_Scatterv(M, sendCounts, displacements, MPI_FLOAT,
+                 localM, localRows * matSize, MPI_FLOAT,
+                 0, MPI_COMM_WORLD);
+
+    // Transpose the local block
+    for (int i = 0; i < localRows; i++) {
+        for (int j = 0; j < matSize; j++) {
+            localT[j * matSize + (startRow + i)] = localM[i * matSize + j];
         }
     }
-    return is_sym;
+
+    // Gather transposed blocks into T
+    MPI_Gatherv(localT, localRows * matSize, MPI_FLOAT,
+                T, sendCounts, displacements, MPI_FLOAT,
+                0, MPI_COMM_WORLD);
+
+    // Cleanup
+    free(localM);
+    free(localT);
+    if (rank == 0) {
+        free(sendCounts);
+        free(displacements);
+    }
 }
 
