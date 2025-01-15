@@ -1,158 +1,226 @@
-#include <stdio.h>
-#include <omp.h>
-#include <mpi.h>
 #include "main.h"
 
+#include <math.h>
+#include <stdio.h>
+#include <mpi.h>
 #include <stdlib.h>
-#include <tgmath.h>
-#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
 
-/// This main performs three matrix transposition and check symmetry approaches:
-/// - Sequential
-/// - Implicitly parallelized
-/// - Explicitly parallelized
-///
-/// It takes <pow> as input and operates over [2^pow]x[2^pow] matrices
-int main(int argc, char **argv) {
-    srand(time(NULL));
-    if (argc != 2) {
-        printf("Usage: ./main <matrix_size>\n");
-        return 1;
-    }
-    int n = atoi(argv[1]);
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
 
-    int rank, num_procs;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-    printf("%d out of %d procs\n", rank, num_procs);
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <mpi.h>
 
-
-    int size = pow(2, n);
-    printf("matrix [%d]x[%d]...\n", size, size);
-
-    float *M = NULL;
-    float *T = NULL;
-    if (rank == 0) {
-        M = allocate_sqr_matrix(size);
-        T = allocate_sqr_matrix(size);
-        init_matrix(M, size);
-        print_top_left_block(M, size, size);
+void print_matrix(float *matrix, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            printf("%4.0f ", matrix[i * cols + j]);
+        }
         printf("\n");
     }
+}
 
-    //------------------------sequential--------------------------
-    double wt1, wt2, elapsed;
+void transpose_local(float *local_matrix, float *local_transposed, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            local_transposed[j * rows + i] = local_matrix[i * cols + j];
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
+    MPI_Init(&argc, &argv);
+
+    int rank, nprocs;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+
+    int N = 8; // Size of the square matrix (N x N)
+    float *matrix = NULL;
+    float *transposed = NULL;
+
+    // Process 0 initializes the matrix
     if (rank == 0) {
-        if (checkSym(M, size)) {
-            printf("Matrix is symmetric according to chechSym() - no need to transpose!\n");
-        } else {
-            wt1 = MPI_Wtime();
-            matTranspose(M, T, size);
-            wt2 = MPI_Wtime();
-            elapsed = wt2 - wt1;
-            printf("mat transpose: %f\n", elapsed);
-            print_top_left_block(T, size, size);
+        matrix = (float *)malloc(N * N * sizeof(float));
+        transposed = (float *)malloc(N * N * sizeof(float));
+
+        // Fill the matrix with some values
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                matrix[i * N + j] = i * 10 + j;
+            }
         }
 
+        printf("Original matrix:\n");
+        print_matrix(matrix, N, N);
     }
-    //------------------------parallel-MPI--------------------------
-    wt1 = MPI_Wtime();
-    matTransposeMPI(M, T, size, rank, num_procs);
-    wt2 = MPI_Wtime();
-    elapsed = wt2 - wt1;
+
+    // Scatter the columns of the matrix to all processes
+    int col_per_proc = N / nprocs;
+    printf("col_per_proc: %d\n", col_per_proc);
+
+    float *local_matrix = (float *)malloc(col_per_proc * N * sizeof(float));
+
+    // count: num of blocks
+    // block length: num of elements in each block
+    // stride: elements between start of block N and start of block N+1
+    MPI_Datatype columns_type, res_column_type;
+    MPI_Type_vector( N, // count of blocks is row number
+                    col_per_proc, // block length is column for each process
+                     N, // stride num process * column = N for each process
+                    MPI_FLOAT, &columns_type);
+    //MPI_Type_create_resized(MPI_FLOAT, 0,    1*sizeof(float), // extend: length of a single block, so scatter knows where the next one starts&columns_type);
+    MPI_Type_create_resized(columns_type, 0, col_per_proc * sizeof(float), &res_column_type);
+    MPI_Type_commit(&res_column_type);
+    //MPI_Type_commit(&columns_type);
+
+
+   /* MPI_Scatter(matrix, 1, columns_type,
+                local_matrix, col_per_proc * N, MPI_FLOAT,
+                0, MPI_COMM_WORLD);
+
+    printf("Process %d received in local_matrix aftert SCATTER:\n", rank);
+    print_matrix(local_matrix, N, col_per_proc);
+   */
+    int counts[nprocs], displs[nprocs];
     if (rank == 0) {
-        printf("\nmat transposeMPI: %f\n", elapsed);
-        print_top_left_block(T, size, size);
-        free(M);
-        free(T);
+        for (int i = 0; i < nprocs; i++) {
+            counts[i] = 1;
+            displs[i] = i ;
+        }
+    }
+    MPI_Scatterv(matrix, counts, displs,
+        res_column_type, local_matrix,
+        col_per_proc * N, MPI_FLOAT,
+        0, MPI_COMM_WORLD);
+
+
+    printf("Process %d received in local_matrix after SCATTERV:\n", rank);
+    print_matrix(local_matrix, N, col_per_proc);
+/*
+    // Allocate space for the local transposed matrix
+    float *local_transposed = (float *)malloc(rows_per_proc * N * sizeof(float));
+
+    // Transpose locally (swap rows and columns for each chunk)
+    transpose_local(local_matrix, local_transposed, rows_per_proc, N);
+
+    // Gather the transposed chunks into the final matrix
+    if (rank == 0) {
+        float *temp_buffer = (float *)malloc(N * N * sizeof(float));
+        MPI_Gather(local_transposed, rows_per_proc * N, MPI_FLOAT,
+                   temp_buffer, rows_per_proc * N, MPI_FLOAT,
+                   0, MPI_COMM_WORLD);
+
+        // Reassemble the final transposed matrix
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                transposed[j * N + i] = temp_buffer[i * N + j];
+            }
+        }
+
+        free(temp_buffer);
+    } else {
+        MPI_Gather(local_transposed, rows_per_proc * N, MPI_FLOAT,
+                   NULL, rows_per_proc * N, MPI_FLOAT,
+                   0, MPI_COMM_WORLD);
+    }
+*/
+    // Process 0 prints the transposed matrix
+    if (rank == 0) {
+        // printf("\nTransposed matrix:\n");
+       // print_matrix(transposed, N, N);
+        free(matrix);
+        free(transposed);
     }
 
+    free(local_matrix);
+    //free(local_transposed);
 
+    MPI_Type_free(&res_column_type);
     MPI_Finalize();
     return 0;
 }
 
+/*
+int main(int argc, char *argv[]) {
+    int size = 8; // matrice 8x8
+    float *M = allocate_sqr_matrix(size);
+    int nprocs, rank; // 4 processi
+    int i, j;
 
-/// Naive matrix transposition
-void matTranspose(float *M, float *T, int size) {
-    int rows = size, cols = size;
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            T[j * rows + i] = M[i * cols + j];
-        }
-    }
-}
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-/// Naive check symmetry
-int checkSym(float *M, int size) {
-    int is_sym = 1; // assumed symmetric
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            if (M[j * size + i] != M[i * size + j]) {
-                is_sym = 0; // non-symmetric
+    // Matrix initialization
+    if (rank == 0) {
+        printf("running with %d processes", nprocs);
+        for (i = 0; i < size; i++) {
+            for (j = 0; j < size; j++) {
+                M[i * size + j] = i * 10 + j;
             }
         }
-    }
-    return is_sym;
-}
-void matTransposeMPI(float *M, float *T, int matSize, int rank, int size) {
-    int rowsPerProcess = matSize / size;
-    int extraRows = matSize % size;
-
-    int startRow = rank * rowsPerProcess;
-    int endRow = startRow + rowsPerProcess;
-    if (rank == size - 1) {
-        endRow += extraRows;
+        printf("Matrix M:\n");
+        print_matrix(M, size, size);
     }
 
-    int localRows = endRow - startRow;
 
-    // Allocate local buffers
-    float *localM = (float *)malloc(localRows * matSize * sizeof(float));
-    float *localT = (float *)malloc(matSize * matSize * sizeof(float));
-    if (!localM || !localT) {
-        fprintf(stderr, "Memory allocation failed on rank %d\n", rank);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    int *sendCounts = NULL;
-    int *displacements = NULL;
-
+    int rows = size / nprocs;
+    int columns = size;
+    int elements_in_local_M = rows * size;
     if (rank == 0) {
-        sendCounts = (int *)malloc(size * sizeof(int));
-        displacements = (int *)malloc(size * sizeof(int));
-
-        for (int i = 0; i < size; i++) {
-            int currentRows = rowsPerProcess + (i == size - 1 ? extraRows : 0);
-            sendCounts[i] = currentRows * matSize;
-            displacements[i] = i * rowsPerProcess * matSize;
-        }
+        printf("Number of processes: %d\n", nprocs);
+        printf("Matrix size: %d\n", size);
+        printf("Rows per process: %d\n", rows);
+        printf("Elements in each local_M: %d\n", elements_in_local_M);
     }
 
-    // Scatter rows of M
-    MPI_Scatterv(M, sendCounts, displacements, MPI_FLOAT,
-                 localM, localRows * matSize, MPI_FLOAT,
-                 0, MPI_COMM_WORLD);
+    // --- SCATTER ---
+    float *local_M = allocate_sqr_matrix(elements_in_local_M);
+    MPI_Scatter(M, elements_in_local_M, MPI_FLOAT, local_M, elements_in_local_M, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    printf("\nprocess %d received from root local_M :\n ", rank);
+    print_matrix(local_M, rows, columns);
 
-    // Transpose the local block
-    for (int i = 0; i < localRows; i++) {
-        for (int j = 0; j < matSize; j++) {
-            localT[j * matSize + (startRow + i)] = localM[i * matSize + j];
-        }
-    }
+    // --- TYPE VECTOR ---
+    int elem_in_block = rows * rows;
+    int block_size = rows;
+    MPI_Datatype BlockType;
+    MPI_Type_vector(rows * rows, block_size, //count: num of blocks, blocklen: num of elements
+        rows * rank, MPI_FLOAT, &BlockType);
+    MPI_Type_commit(&BlockType);
 
-    // Gather transposed blocks into T
-    MPI_Gatherv(localT, localRows * matSize, MPI_FLOAT,
-                T, sendCounts, displacements, MPI_FLOAT,
-                0, MPI_COMM_WORLD);
+    // --- SCATTER WITH DERIVED DATATYPE ---
+    float *local_M_derived = allocate_sqr_matrix(elements_in_local_M);
+    MPI_Scatter(M, nprocs, BlockType,
+                local_M_derived, elem_in_block * nprocs,
+         MPI_FLOAT, 0, MPI_COMM_WORLD);
 
-    // Cleanup
-    free(localM);
-    free(localT);
+    printf("\nprocess %d received from root local_M DERIVED :\n ", rank);
+    print_matrix(local_M, rows, columns);
+
+
+    float *received_M = allocate_sqr_matrix(elem_in_block);
     if (rank == 0) {
-        free(sendCounts);
-        free(displacements);
+        MPI_Send(local_M, 1, BlockType, 1, 0, MPI_COMM_WORLD);
+        MPI_Recv(received_M, elem_in_block, MPI_FLOAT, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-}
+    if (rank == 1) {
+        MPI_Send(local_M, 1, BlockType, 0, 0, MPI_COMM_WORLD);
+        MPI_Recv(received_M, elem_in_block, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+    printf("\nprocess %d received received_M:\n", rank);
+    print_matrix(received_M, block_size, block_size);
 
+    if (rank == 0) free(M);
+    MPI_Finalize();
+    return 0;
+}
+*/
