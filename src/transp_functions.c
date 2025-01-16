@@ -50,7 +50,7 @@ void transpose_local(float *local_matrix, float *local_transposed, int rows, int
     }
 }
 
-/// Parallel MPI matrix transposition
+/// Parallel MPI matrix transposition using Scattering - Gathering with Datatypes
 void matTransposeMPI(float *M, float *T, int mat_size, int rank, int num_procs) {
     int col_per_proc = mat_size / num_procs;
 
@@ -101,6 +101,7 @@ void matTransposeMPI(float *M, float *T, int mat_size, int rank, int num_procs) 
 }
 
 
+/// Parallel MPI matrix transposition using Bcast
 void matTransposeMPI_Bcast(float *M, float *T, int mat_size, int rank, int nproc){
     int rows_per_proc = mat_size / nproc;
     int start = rank * rows_per_proc;
