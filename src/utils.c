@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define ELEM_TO_PRINT 5
+#define ELEM_TO_PRINT 8
 /// Dynamic allocation of a square [size] x [size] matrix
 float *allocate_sqr_matrix(int size) {
     float *matrix = malloc(size * size * sizeof(float));
@@ -23,10 +23,10 @@ void init_matrix(float *matrix, int size) {
     }
 }
 /// Function that prints a square [size] x [size] matrix
-void print_matrix(float *M, int rows, int cols) {
+void print_matrix(float *matrix, int rows, int cols) {
     for (int i = 0; i < ELEM_TO_PRINT && i < rows; i++) {
         for (int j = 0; j < ELEM_TO_PRINT && j < cols; j++) {
-            printf("%4.0f ", M[i * cols + j]);
+            printf("%4.1f ", matrix[i * cols + j]);
         }
         printf("\n");
     }
