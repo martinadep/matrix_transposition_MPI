@@ -11,6 +11,44 @@
 /// - MPI parallelized
 ///
 /// It takes <pow> as input and operates over [2^pow]x[2^pow] matrices
+
+float partialChecksum(const float *matrix, int n)
+{
+    float sum = 0.0f;
+    if (n <= 0) return sum;  // Edge case: no size
+
+    // Identify up to 3 selected rows/columns
+    int mid = n / 2;
+    int selectedRows[3] = {0, mid, n - 1};
+    int selectedCols[3] = {0, mid, n - 1};
+
+    // 1) Sum the selected rows, weighting by (i+1)
+    for (int r = 0; r < 3; r++) {
+        int i = selectedRows[r];
+        // Validate index in range
+        if (i >= 0 && i < n) {
+            float rowWeight = (float)(i + 1);
+            for (int j = 0; j < n; j++) {
+                sum += rowWeight * matrix[i * n + j];
+            }
+        }
+    }
+
+    // 2) Sum the selected columns, weighting by (j+1)
+    for (int c = 0; c < 3; c++) {
+        int j = selectedCols[c];
+        // Validate index in range
+        if (j >= 0 && j < n) {
+            float colWeight = (float)(j + 1);
+            for (int i = 0; i < n; i++) {
+                sum += colWeight * matrix[i * n + j];
+            }
+        }
+    }
+
+    return sum;
+}
+
 int main(int argc, char *argv[]) {
 
     srand(time(NULL));
@@ -59,6 +97,9 @@ int main(int argc, char *argv[]) {
         M = allocate_sqr_matrix(mat_size);
         T = allocate_sqr_matrix(mat_size);
         init_matrix(M, mat_size);
+
+        float checksum = partialChecksum(M, mat_size);
+        printf("checksum is %f\n", checksum);
         //printf("Original matrix %d x %d:\n", N, N);
         //print_matrix(M, N, N);
     }
@@ -72,8 +113,11 @@ int main(int argc, char *argv[]) {
             start = MPI_Wtime();
             transpose_local(M, T, mat_size, mat_size);
             end = MPI_Wtime();
-            //print_matrix(T, 5);
             printf("%f s | Elapsed time transpose sequential\n", end - start);
+            //print_matrix(T, 5, 5);
+
+            float checksum = partialChecksum(M, mat_size);
+            printf("checksum is %f\n", checksum);
         }
 
         //-------------------------- OMP -------------------------------
@@ -83,8 +127,11 @@ int main(int argc, char *argv[]) {
             start = MPI_Wtime();
             matTransposeOMP(M, T, n);
             end = MPI_Wtime();
-            //print_matrix(T, 5);
             printf("%f s | Elapsed time transpose OMP\n", end - start);
+            //print_matrix(T, 5, 5);
+
+            float checksum = partialChecksum(M, mat_size);
+            printf("checksum is %f\n", checksum);
         }
     }
 
@@ -103,6 +150,10 @@ int main(int argc, char *argv[]) {
         if (rank == 0) {
             end = MPI_Wtime();
             printf("%f s | Elapsed time transpose MPI (%d procs)\n", end - start, nprocs);
+            //print_matrix(T, 5, 5);
+
+            float checksum = partialChecksum(M, mat_size);
+            printf("checksum is %f\n", checksum);
         }
 
 
@@ -115,6 +166,10 @@ int main(int argc, char *argv[]) {
         if (rank == 0) {
             end = MPI_Wtime();
             printf("%f s | Elapsed time transpose MPI Bcast (%d procs)\n", end - start, nprocs);
+
+            float checksum = partialChecksum(M, mat_size);
+            printf("checksum is %f\n", checksum);
+            //print_matrix(T, 5, 5);
         }
     }
     // Root process free allocated matrices

@@ -1,13 +1,6 @@
 #ifndef __MAIN_H_
 #define __MAIN_H_
 
-// N is power of 2, size of squared matrix
-// evaluate from N=16 to N=4096
-#define MIN 16
-#define MAX 4096
-#define LOOP 10
-#include <stdbool.h>
-
 // CHECKSYM_FUNCTIONS.C
 int checkSym(float* M, int mat_size);
 int checkSymOMP(float* M, int mat_size);

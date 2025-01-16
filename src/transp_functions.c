@@ -19,7 +19,7 @@ void matTranspose(float *M, float *T, int mat_size) {
 
 /// Parallel OMP matrix transposition
 void matTransposeOMP(float *M, float *T, int mat_size) {
-    int block_size = choose_block_size(mat_size);
+    int block_size = 256;//choose_block_size(mat_size);
 
     /*
      * If you want to use a different number of threads
@@ -29,20 +29,18 @@ void matTransposeOMP(float *M, float *T, int mat_size) {
      *
      * NOTE that, in that case, you must specify for other functions to work with only 1 omp thread !
     */
-    int num_thr = choose_omp_threads(mat_size);
+    int num_thr = 1;//choose_omp_threads(mat_size);
     omp_set_num_threads(num_thr);
 
 #pragma omp parallel for collapse(2)
     for (int i = 0; i < mat_size; i += block_size) {
         for (int j = 0; j < mat_size; j += block_size) {
-            for (int bi = i; bi < i + block_size && bi < mat_size; bi += 2) {
-                for (int bj = j; bj < j + block_size && bj < mat_size; bj += 2) {
+            T[j * mat_size + i] = M[i * mat_size + j];
+           /* for (int bi = i; bi < i + block_size && bi < mat_size; bi++) {
+                for (int bj = j; bj < j + block_size && bj < mat_size; bj++) {
                     T[bj * mat_size + bi] = M[bi * mat_size + bj];
-                    T[bj * mat_size + bi + 1] = M[(bi + 1) * mat_size + bj];
-                    T[(bj + 1) * mat_size + bi] = M[bi * mat_size + bj + 1];
-                    T[(bj + 1) * mat_size + bi + 1] = M[(bi + 1) * mat_size + bj + 1];
                 }
-            }
+            }*/
         }
     }
 }
