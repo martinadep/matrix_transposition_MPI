@@ -1,30 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <omp.h>
 #include "main.h"
 
-/// Naive matrix transposition
-void matTranspose(float *M, float *T, int mat_size) {
-#pragma omp parallel num_threads(1)
-    for (int i = 0; i < mat_size; i++) {
-        for (int j = 0; j < mat_size; j++) {
-            T[j * mat_size + i] = M[i * mat_size + j];
+void transpose_local(float *local_matrix, float *local_transposed, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            local_transposed[j * rows + i] = local_matrix[i * cols + j];
         }
     }
 }
 
+/// Naive matrix transposition
+void matTranspose(float *M, float *T, int mat_size) {
+    transpose_local(M, T, mat_size, mat_size);
+}
+
 /// Parallel OMP matrix transposition
 void matTransposeOMP(float *M, float *T, int mat_size) {
-    int block_size = 16; //choose_block_size(size);
+    int block_size = choose_block_size(mat_size);
 
     /*
      * If you want to use a different number of threads
      * using export OMP_NUM_THREADS
      * you must comment the next two lines of code,
      * otherwise 'export' it is overwritten
+     *
+     * NOTE that, in that case, you must specify for other functions to work with only 1 omp thread !
     */
-    int num_thr = 4; //choose_num_threads(size);
-    //    omp_set_num_threads(num_thr);
+    int num_thr = choose_omp_threads(mat_size);
+    omp_set_num_threads(num_thr);
 
 #pragma omp parallel for collapse(2)
     for (int i = 0; i < mat_size; i += block_size) {
@@ -37,15 +43,6 @@ void matTransposeOMP(float *M, float *T, int mat_size) {
                     T[(bj + 1) * mat_size + bi + 1] = M[(bi + 1) * mat_size + bj + 1];
                 }
             }
-        }
-    }
-}
-
-void transpose_local(float *local_matrix, float *local_transposed, int rows, int cols) {
-#pragma omp parallel num_threads(1)
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            local_transposed[j * rows + i] = local_matrix[i * cols + j];
         }
     }
 }

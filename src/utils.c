@@ -67,3 +67,16 @@ int remove_outliers(float data[], float filtered_data[], int data_size, float th
     }
     return indice_output;
 }
+
+// ------ FUNCTIONS USEFUL FOR OMP ------
+int choose_omp_threads(int matrix_size) {
+    if (matrix_size < 64) return 1; // [0, 32]
+    if (matrix_size < 512) return matrix_size / 8; // [64, 128, 256]
+    return 96; // [512, inf)
+}
+
+int choose_block_size(int matrix_size) {
+    if (matrix_size < 256) return 16; // [0, 128]
+    if (matrix_size < 1024) return 64; // [256, 512]
+    return 256; // [1024, inf)
+}
