@@ -12,7 +12,7 @@
 ///
 /// It takes <pow> as input and operates over [2^pow]x[2^pow] matrices
 int main(int argc, char *argv[]) {
-    printf("Hello World!\n");
+
     srand(time(NULL));
     if (argc < 2) {
         printf("Usage: ./main <matrix_size>\n");
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
         if (rank == 0) {
             end = MPI_Wtime();
-            printf("%f s | Elapsed time transpose MPI\n", end - start);
+            printf("%f s | Elapsed time transpose MPI (%d procs)\n", end - start, nprocs);
         }
 
 
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
         if (rank == 0) {
             end = MPI_Wtime();
-            printf("%f s | Elapsed time transpose MPI Bcast\n", end - start);
+            printf("%f s | Elapsed time transpose MPI Bcast (%d procs)\n", end - start, nprocs);
         }
     }
     // Root process free allocated matrices
