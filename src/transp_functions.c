@@ -6,7 +6,11 @@
 
 /// Naive matrix transposition
 void matTranspose(float *M, float *T, int mat_size) {
-    transpose_local(M, T, mat_size, mat_size);
+    for (int i = 0; i < mat_size; i++) {
+        for (int j = 0; j < mat_size; j++) {
+            T[j * mat_size + i] = M[i * mat_size + j];
+        }
+    }
 }
 
 /// Naive matrix transposition (not necessarly square matrices)
