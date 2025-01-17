@@ -26,7 +26,8 @@ else
     exit 1
 fi
 echo "matrix,time,procs,algo" >> medie_mpi.csv
-
+echo "Please wait, it might take few minutes to complete all the executions"
+echo "since the program is looped 10 times for each process number"
 # Loop to run the program with different thread numbers
 for num_procs in 1 2 4 8 16 32 64 96; do
     mpiexec -np $num_procs ./$OUTPUT_FILE $num_procs >> medie_mpi.csv
