@@ -19,7 +19,7 @@
 ///
 /// You can store the result in a .csv file with the following format:
 ///
-/// "matrix_size, mean, num_threads, approach"
+/// "matrix_size, mean, num_procs, approach"
 int main(int argc, char **argv) {
     srand(time(NULL));
 
