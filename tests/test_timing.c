@@ -28,14 +28,11 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
-    float filtered_data_MpiBcast[LOOP];
-    float data_MpiBcast[LOOP];
-
     float filtered_data_MpiScatt[LOOP];
     float data_MpiScatt[LOOP];
-
     float thrsd = 2.0;
 
+    // ----- matTransposeMPI Scatter -----
     for (int matrix_size = MIN; matrix_size <= MAX; matrix_size *= 2) {
         if (matrix_size > nprocs) {
             FILE *file = NULL;
@@ -58,26 +55,24 @@ int main(int argc, char **argv) {
                 init_matrix(M, matrix_size);
             }
 
-            // matTransposeMPI computed 'LOOP' times
             double start = 0, end = 0;
             for (int i = 0; i < LOOP; i++) {
-                // root stores timing
-                if (rank == 0) {
-                    start = MPI_Wtime(); // Start wall-clock time
-                }
+                // root stores timing for matTransposeMPI with Scatter
+                if (rank == 0) { start = MPI_Wtime(); }
 
                 matTransposeMPI(M, T, matrix_size, rank, nprocs);
 
                 MPI_Barrier(MPI_COMM_WORLD);
                 if (rank == 0) {
                     end = MPI_Wtime(); // Stop wall-clock time
-                    fprintf(file, "%f s - %d procs matTransposeMPI\n", end - start, nprocs);
+                    fprintf(file, "(%d) %fs | %d procs | matTransposeMPI()\n",i, end - start, nprocs);
                     data_MpiScatt[i] = end - start;
                 }
             }
 
             if (rank == 0) {
                 // root computes data filtering and storing
+                // MPI Scatter
                 int count_filtered_MpiScatt = remove_outliers(data_MpiScatt, filtered_data_MpiScatt, LOOP, thrsd);
                 if (count_filtered_MpiScatt > 0) {
                     double filtered_data_mean = calculate_mean(filtered_data_MpiScatt, count_filtered_MpiScatt);
@@ -90,21 +85,77 @@ int main(int argc, char **argv) {
                     printf("All values considered outliers in a row\n");
                 }
             }
-
-            /*
-                    int count_filtered_MpiBcast = remove_outliers(data_MpiBcast, filtered_data_MpiBcast, LOOP, thrsd);
-                    if (count_filtered_MpiBcast > 0) {
-                        double filtered_data_mean = calculate_mean(filtered_data_MpiBcast, count_filtered_MpiBcast);
-                        // READABLE FORMAT
-                        //printf("[%dx%d] mean for %d threads: %.7f (block-based)\n", matrix_size, matrix_size, num_threads, filtered_data_mean);
-
-                        // .CSV FORMAT
-                        printf("%d,%.7f,%d,Bcast\n", matrix_size, filtered_data_mean, nprocs);
-                    } else {
-                        printf("All values considered outliers in a row\n");
-                    }*/
             if (rank == 0) {
                 fclose(file);
+                free(M);
+                free(T);
+            }
+        }
+    }
+
+    printf("\n");
+
+    float filtered_data_MpiBcast[LOOP];
+    float data_MpiBcast[LOOP];
+    // ----- matTransposeMPI Bcast -----
+    for (int matrix_size = MIN; matrix_size <= MAX; matrix_size *= 2) {
+        if (matrix_size > nprocs) {
+            FILE *file = NULL;
+            // root stores values
+            if (rank == 0) {
+                // File settings to store results
+                char filename[20];
+                sprintf(filename, "./timing_out/%dmatrix.txt", matrix_size);
+                file = fopen(filename, "a");
+                if (file == NULL) {
+                    perror("Error opening file");
+                    return 1;
+                }
+            }
+            float *M = NULL;
+            float *T = NULL;
+            if (rank == 0) {
+                M = allocate_sqr_matrix(matrix_size);
+                T = allocate_sqr_matrix(matrix_size);
+                init_matrix(M, matrix_size);
+            }
+
+            // ----- matTransposeMPI -----
+            double start = 0, end = 0;
+            for (int i = 0; i < LOOP; i++) {
+                // root stores timing for matTransposeMPI with Bcast
+                if (rank == 0) { start = MPI_Wtime(); }
+
+                matTransposeMPI_Bcast(M, T, matrix_size, rank, nprocs);
+
+                MPI_Barrier(MPI_COMM_WORLD);
+                if (rank == 0) {
+                    end = MPI_Wtime(); // Stop wall-clock time
+                    fprintf(file, "(%d) %fs | %d procs | matTransposeMPI_Bcast()\n",i, end - start, nprocs);
+                    data_MpiBcast[i] = end - start;
+                }
+            }
+
+            if (rank == 0) {
+                // root computes data filtering and storing
+                // MPI Bcast
+                int count_filtered_MpiBcast = remove_outliers(data_MpiBcast, filtered_data_MpiBcast, LOOP, thrsd);
+                if (count_filtered_MpiBcast > 0) {
+                    double filtered_data_mean = calculate_mean(filtered_data_MpiBcast, count_filtered_MpiBcast);
+                    // READABLE FORMAT
+                    //printf("[%dx%d] mean for %d threads: %.7f (block-based)\n", matrix_size, matrix_size, num_threads, filtered_data_mean);
+
+                    // .CSV FORMAT
+                    printf("%d,%.7f,%d,Bcast\n", matrix_size, filtered_data_mean, nprocs);
+                } else {
+                    printf("All values considered outliers in a row\n");
+                }
+            }
+
+            if (rank == 0) {
+                fclose(file);
+                free(M);
+                free(T);
             }
         }
     }
