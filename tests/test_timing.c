@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("\n");
+    if(rank == 0) printf("\n");
 
     float filtered_data_MpiBcast[LOOP];
     float data_MpiBcast[LOOP];

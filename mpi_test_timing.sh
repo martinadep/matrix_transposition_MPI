@@ -28,7 +28,7 @@ fi
 echo "matrix,time,procs,algo" >> medie_mpi.csv
 
 # Loop to run the program with different thread numbers
-for num_procs in 1 2 4 8 16 32 64 96; do
+for num_procs in 1 2 4 8 16 32 64; do
     mpiexec -np $num_procs ./$OUTPUT_FILE $num_procs >> medie_mpi.csv
 
     if [ $? -eq 0 ]; then
