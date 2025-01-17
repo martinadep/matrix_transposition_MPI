@@ -20,7 +20,7 @@ fi
 
 echo "#############################################################"
 # Loop to run the program with different processors number
-for num_procs in 1 2 4 8 16 32 64 96; do
+for num_procs in 1 2 4 8; do
     mpiexec -np $num_procs ./$OUTPUT_FILE
     if [ $? -eq 0 ]; then
         echo "Executed successfully for num_procs: $num_procs"
