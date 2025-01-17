@@ -48,14 +48,6 @@ void main(int argc, char *argv[]) {
             print_matrix(T, mat_size, mat_size);
         }
         printf("\n");
-
-        if (checkSymOMP(M, mat_size)) {
-            printf("Matrix is symmetric [check_SymOMP], no need to transpose\n");
-        } else {
-            printf("Matrix is NOT symmetric [check_SymOMP], transposing OMP\n");
-            matTransposeOMP(M, T, mat_size);
-            print_matrix(T, mat_size, mat_size);
-        }
     }
 
     int checkMPI = checkSymMPI(M, mat_size, rank, nprocs);

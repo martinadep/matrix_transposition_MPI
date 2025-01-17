@@ -35,6 +35,43 @@ void print_matrix(float *matrix, int rows, int cols) {
     }
 }
 
+
+float partialChecksum(const float *matrix, int n)
+{
+    float sum = 0.0f;
+    if (n <= 0) return sum;  // Edge case: no size
+
+    // Identify up to 3 selected rows/columns
+    int mid = n / 2;
+    int selectedRows[3] = {0, mid, n - 1};
+    int selectedCols[3] = {0, mid, n - 1};
+
+    // 1) Sum the selected rows, weighting by (i+1)
+    for (int r = 0; r < 3; r++) {
+        int i = selectedRows[r];
+        // Validate index in range
+        if (i >= 0 && i < n) {
+            float rowWeight = (float)(i + 1);
+            for (int j = 0; j < n; j++) {
+                sum += rowWeight * matrix[i * n + j];
+            }
+        }
+    }
+    // 2) Sum the selected columns, weighting by (j+1)
+    for (int c = 0; c < 3; c++) {
+        int j = selectedCols[c];
+        // Validate index in range
+        if (j >= 0 && j < n) {
+            float colWeight = (float)(j + 1);
+            for (int i = 0; i < n; i++) {
+                sum += colWeight * matrix[i * n + j];
+            }
+        }
+    }
+
+    return sum;
+}
+
 // ------ FUNCTIONS TO REMOVE OUTLIERS AND CALCULATE MEANS -------
 /// Function to calculate mean of the elements inside an array
 float calculate_mean(float arr[], int array_size) {

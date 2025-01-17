@@ -13,12 +13,6 @@
 
 # Modules for C
 module load mpich-3.2.1--gcc-9.1.0
-# Define gcc and g++ to use the version 9.1.0
-
-gcc() {
-    gcc-9.1.0 "$@"
-}
-gcc --version
 mpicc --version
 
 echo "Job running on: $(hostname)"

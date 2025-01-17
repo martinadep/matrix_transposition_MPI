@@ -19,6 +19,8 @@ float* allocate_sqr_matrix(int size);
 void init_matrix(float* matrix, int size);
 void print_matrix(float* matrix, int rows, int cols);
 
+float partialChecksum(const float *matrix, int n);
+
 int remove_outliers(float data[], float filtered_data[], int data_size, float threshold);
 float calculate_std_dev(float arr[], int array_size, float mean);
 float calculate_mean(float arr[], int array_size);

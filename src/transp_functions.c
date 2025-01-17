@@ -4,43 +4,16 @@
 #include <omp.h>
 #include "main.h"
 
-void transpose_local(float *local_matrix, float *local_transposed, int rows, int cols) {
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            local_transposed[j * rows + i] = local_matrix[i * cols + j];
-        }
-    }
-}
-
 /// Naive matrix transposition
 void matTranspose(float *M, float *T, int mat_size) {
     transpose_local(M, T, mat_size, mat_size);
 }
 
-/// Parallel OMP matrix transposition
-void matTransposeOMP(float *M, float *T, int mat_size) {
-    int block_size = 256;//choose_block_size(mat_size);
-
-    /*
-     * If you want to use a different number of threads
-     * using export OMP_NUM_THREADS
-     * you must comment the next two lines of code,
-     * otherwise 'export' it is overwritten
-     *
-     * NOTE that, in that case, you must specify for other functions to work with only 1 omp thread !
-    */
-    int num_thr = 1;//choose_omp_threads(mat_size);
-    omp_set_num_threads(num_thr);
-
-#pragma omp parallel for collapse(2)
-    for (int i = 0; i < mat_size; i += block_size) {
-        for (int j = 0; j < mat_size; j += block_size) {
-            T[j * mat_size + i] = M[i * mat_size + j];
-           /* for (int bi = i; bi < i + block_size && bi < mat_size; bi++) {
-                for (int bj = j; bj < j + block_size && bj < mat_size; bj++) {
-                    T[bj * mat_size + bi] = M[bi * mat_size + bj];
-                }
-            }*/
+/// Naive matrix transposition (not necessarly square matrices)
+void transpose_local(float *local_matrix, float *local_transposed, int rows, int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            local_transposed[j * rows + i] = local_matrix[i * cols + j];
         }
     }
 }
