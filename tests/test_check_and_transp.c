@@ -82,8 +82,6 @@ void main(int argc, char *argv[]) {
         if (checkSym(M_symmetric, mat_size)) printf("M_symmetric is symmetric [checkSym]\n");
         else printf("M_symmetric is NOT symmetric [checkSym]\n");
 
-        if (checkSymOMP(M_symmetric, mat_size)) printf("M_symmetric is symmetric [check_SymOMP]\n");
-        else printf("M_symmetric is NOT symmetric [checkOMP]\n");
     }
 
     checkMPI = checkSymMPI(M_symmetric, mat_size, rank, nprocs);
