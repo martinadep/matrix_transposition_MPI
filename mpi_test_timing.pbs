@@ -1,0 +1,28 @@
+#!/bin/bash
+# Job name
+#PBS -N midtermII
+# Output files
+#PBS -o ./mpi_matrix_transp.txt
+#PBS -e ./mpi_matrix_transp.e
+# Queue name
+#PBS -q short_cpuQ
+# Set the maximum wall time
+#PBS -l walltime=0:10:00
+# Number of nodes, cpus, mpi processors and amount of memory
+#PBS -l select=1:ncpus=96:mpiprocs=96:mem=512mb
+
+# Modules for C
+module load mpich-3.2.1--gcc-9.1.0
+# Define gcc and g++ to use the version 9.1.0
+
+gcc() {
+    gcc-9.1.0 "$@"
+}
+gcc --version
+
+echo "Job running on: $(hostname)"
+lscpu
+
+cd /home/martina.depiccoli/parco_second/
+chmod +x mpi_test_timing.sh
+./mpi_test_timing.sh
