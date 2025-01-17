@@ -2,8 +2,8 @@
 # Job name
 #PBS -N midtermII
 # Output files
-#PBS -o ./mpi_matrix_transp.txt
-#PBS -e ./mpi_matrix_transp.e
+#PBS -o ./test_functions.txt
+#PBS -e ./test_functions.e
 # Queue name
 #PBS -q short_cpuQ
 # Set the maximum wall time
