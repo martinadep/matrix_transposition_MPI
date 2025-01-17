@@ -19,6 +19,7 @@ gcc() {
     gcc-9.1.0 "$@"
 }
 gcc --version
+mpicc --version
 
 echo "Job running on: $(hostname)"
 lscpu
