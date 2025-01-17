@@ -22,11 +22,9 @@ echo "#############################################################"
 mpiexec -np $num_procs ./$OUTPUT_FILE $MATRIX_POW
 
 if [ $? -eq 0 ]; then
-  echo "Executed successfully for num_procs: $num_procs"
-  echo ""
+  echo "Executed successfully"
 else
-  echo "Error during execution for num_procs: $num_procs"
-  echo ""
+  echo "Error during execution"
   continue
 fi
 echo ""
