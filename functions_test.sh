@@ -19,14 +19,17 @@ else
 fi
 
 echo "#############################################################"
-mpiexec -np $num_procs ./$OUTPUT_FILE $MATRIX_POW
-
-if [ $? -eq 0 ]; then
-  echo "Executed successfully"
-else
-  echo "Error during execution"
-  continue
-fi
-echo ""
+# Loop to run the program with different processors number
+for num_procs in 1 2 4 8 16 32 64 96; do
+    mpiexec -np $num_procs ./$OUTPUT_FILE
+    if [ $? -eq 0 ]; then
+        echo "Executed successfully for num_procs: $num_procs"
+        echo ""
+    else
+        echo "Error during execution for num_procs: $num_procs"
+        echo ""
+        continue
+    fi
+done
 echo "#############################################################"
 mv $OUTPUT_FILE obj
