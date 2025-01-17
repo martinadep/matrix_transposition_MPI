@@ -7,11 +7,11 @@ OUTPUTDIR="timing_out"
 
 # Clean previous build and outputs
 echo "Cleaning previous build and outputs..."
-rm -rf obj tests/$OUTPUTDIR *.o medie_mpi.csv
+rm -rf obj $OUTPUTDIR *.o medie_mpi.csv
 
 # Create necessary directories
 echo "Setting up directories..."
-mkdir -p tests/$OUTPUTDIR
+mkdir -p $OUTPUTDIR
 mkdir -p obj
 
 echo "Setup complete."
