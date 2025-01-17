@@ -20,5 +20,5 @@ lscpu
 
 # ---- Change this path ----
 cd /home/martina.depiccoli/parco_second/
-chmod +x mpi_test_timing.sh
-./mpi_test_timing.sh
+chmod +x functions_test.sh
+./functions_test.sh
