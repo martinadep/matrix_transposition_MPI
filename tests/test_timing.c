@@ -159,5 +159,6 @@ int main(int argc, char **argv) {
             }
         }
     }
+    if(rank == 0) printf("\n");
     return 0;
 }
