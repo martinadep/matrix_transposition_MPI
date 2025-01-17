@@ -93,8 +93,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    if(rank == 0) printf("\n");
-
     float filtered_data_MpiBcast[LOOP];
     float data_MpiBcast[LOOP];
     // ----- matTransposeMPI Bcast -----
@@ -146,7 +144,7 @@ int main(int argc, char **argv) {
                     //printf("[%dx%d] mean for %d threads: %.7f (block-based)\n", matrix_size, matrix_size, num_threads, filtered_data_mean);
 
                     // .CSV FORMAT
-                    printf("%d,%.7f,%d,Bcast\n", matrix_size, filtered_data_mean, nprocs);
+                    printf("%d,%.7f,%d,Bcast\n\n", matrix_size, filtered_data_mean, nprocs);
                 } else {
                     printf("All values considered outliers in a row\n");
                 }
