@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd ..
 # Define variables
 SOURCE_FILES="tests/test_check_and_transp.c src/transp_functions.c src/checksym_functions.c src/utils.c"
 OUTPUT_FILE="func_test.o"

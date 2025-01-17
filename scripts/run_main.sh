@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd ..
 # Define variables
 SOURCE_FILES="src/main.c src/checksym_functions.c src/transp_functions.c src/utils.c"
 OUTPUT_FILE="midtermII.o"

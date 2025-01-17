@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd ..
 # Define variables
 SOURCE_FILES="./tests/test_timing.c src/transp_functions.c src/utils.c"
 OUTPUT_FILE="mpi_test.o"
