@@ -5,7 +5,6 @@
 /// Naive check symmetry
 int checkSym(float *M, int mat_size) {
     int is_sym = 1; // assumed symmetric
-#pragma omp parallel num_threads(1)
     for (int i = 0; i < mat_size; i++) {
         for (int j = 0; j < mat_size; j++) {
             if (M[i * mat_size + j] != M[j * mat_size + i]) {

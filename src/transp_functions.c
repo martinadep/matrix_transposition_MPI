@@ -25,7 +25,6 @@ void transpose_local(float *local_matrix, float *local_transposed, int rows, int
 /// Parallel MPI matrix transposition using Scattering - Gathering with Datatypes
 void matTransposeMPI(float *M, float *T, int mat_size, int rank, int num_procs) {
     int col_per_proc = mat_size / num_procs;
-
     // ------ Create datatype to scatter by columns ------
     MPI_Datatype columns_type, res_columns_type;
     MPI_Type_vector(mat_size, // count: num of blocks of contiguous elements (one for each row)
@@ -37,7 +36,6 @@ void matTransposeMPI(float *M, float *T, int mat_size, int rank, int num_procs) 
                             // extend: bytes for each block (elements in block * size of each element)
                             &res_columns_type);
     MPI_Type_commit(&res_columns_type);
-
     // ------ Set displacement and count of res_columns_type for each proc ------
     int counts[num_procs], disp[num_procs];
     if (rank == 0) {
@@ -46,7 +44,6 @@ void matTransposeMPI(float *M, float *T, int mat_size, int rank, int num_procs) 
             disp[i] = i;
         }
     }
-
     // ------ Scatter the columns of the matrix to all processes ------
     float *local_M = malloc(col_per_proc * mat_size * sizeof(float));
     MPI_Scatterv(M, counts, disp, res_columns_type,
@@ -74,10 +71,10 @@ void matTransposeMPI(float *M, float *T, int mat_size, int rank, int num_procs) 
 
 
 /// Parallel MPI matrix transposition using Bcast
-void matTransposeMPI_Bcast(float *M, float *T, int mat_size, int rank, int nproc){
-    int rows_per_proc = mat_size / nproc;
-    int start = rank * rows_per_proc;
-    int end   = start + rows_per_proc;
+void matTransposeMPI_Bcast(float *M, float *T, int mat_size, int rank, int nprocs){
+    int col_per_proc = mat_size / nprocs;
+    int start = rank * col_per_proc;
+    int end   = start + col_per_proc;
 
     // --- Broadcast matrix to all processes ---
     if (rank != 0) {
@@ -85,18 +82,16 @@ void matTransposeMPI_Bcast(float *M, float *T, int mat_size, int rank, int nproc
         M = allocate_sqr_matrix(mat_size);
     }
     MPI_Bcast(M, mat_size*mat_size, MPI_FLOAT, 0, MPI_COMM_WORLD);
-
     // --- Transpose locally ---
-    float *local_T = malloc(rows_per_proc * mat_size * sizeof(float));
+    float *local_T = malloc(col_per_proc * mat_size * sizeof(float));
     for (int i = start; i < end; i++) {
         for (int j = 0; j < mat_size; j++) {
             local_T[(i - start) * mat_size + j] = M[j * mat_size + i];
         }
     }
-
     // --- Gather all local transposition ---
-    MPI_Gather( local_T,  rows_per_proc * mat_size, MPI_FLOAT, //send
-        T, rows_per_proc * mat_size, MPI_FLOAT, //recv
+    MPI_Gather( local_T,  col_per_proc * mat_size, MPI_FLOAT, //send
+        T, col_per_proc * mat_size, MPI_FLOAT, //recv
         0, MPI_COMM_WORLD);
 
     // --- Clean up ---
