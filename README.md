@@ -1,6 +1,10 @@
-## Introduction to Parallel Computing - Second Deliverable
+## MPI matrix transposition
+Explicit parallelization of matrix transpose operation 
+using Message Passing Interface (MPI).
 
----
+This project aims to benchmark and analyze the performance of this approach,
+comparing its efficiency and scalability with OpenMP and implicit parallelization 
+approaches explored in [this project](https://github.com/martinadep/matrix_transposition_OpenMP).
 
 ## Table of Contents
 
@@ -113,3 +117,7 @@ $ ./mpi_test_timing.sh
 $ cd parco_second/scripts/
 $ ./functions_test.sh
 ```
+
+## Data Analysis
+You will find all of the .csv files containing the data inside the `data/` folder.
+You can process the data and plot the graphs using the provided Jupyter Notebook in the `src/` folder.
