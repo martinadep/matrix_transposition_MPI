@@ -15,6 +15,7 @@ approaches explored in [this project](https://github.com/martinadep/matrix_trans
       - [Additional tests](#additional-tests)
     - [On your local machine](#on-your-local-machine)
       - [Additional tests](#additional-tests-1)
+- [Data analysis](#data-analysis)
 ---
 
 # Project Structure
