@@ -119,5 +119,4 @@ $ ./functions_test.sh
 ```
 
 ## Data Analysis
-You will find all of the .csv files containing the data inside the `data/` folder.
-You can process the data and plot the graphs using the provided Jupyter Notebook in the `src/` folder.
+You can process the data and plot the graphs using the provided python script in the `analysis/` folder.

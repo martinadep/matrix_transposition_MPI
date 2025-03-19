@@ -19,6 +19,6 @@ echo "Job running on: $(hostname)"
 lscpu
 
 # ---- Change this path ----
-cd /home/martina.depiccoli/parco_second/scripts
+cd /home/<your_username>/parco_second/scripts
 chmod +x run_main.sh
 ./run_main.sh
