@@ -12,31 +12,35 @@ approaches explored in [this project](https://github.com/martinadep/matrix_trans
 - [Project Structure](#project-structure)
 - [How to Reproduce](#how-to-reproduce)
     - [On HPC Cluster](#on-hpc-cluster)
+      - [Additional tests](#additional-tests)
     - [On your local machine](#on-your-local-machine)
+      - [Additional tests](#additional-tests-1)
 ---
 
 # Project Structure
 
 ```bash
+├── analysis
+│   └───  graphs_mpi_nprocs.py
 ├── scripts
 │   ├── functions_test.sh
 │   ├── mpi_test_timing.sh
-│   ├── run_main.sh
+│   └───  run_main.sh
 ├── src
 │   ├── checksym_functions.c
 │   ├── main.c
 │   ├── main.h
 │   ├── transp_functions.c
-│   ├── utils.c
+│   └───  utils.c
 ├── tests
 │   ├── test_check_and_transp.c
 │   ├── test_timing.c
-│   ├── test_timing.h
+│   └───  test_timing.h
 ├── functions_test.pbs
 ├── mpi_test_timing.pbs
-├── .gitignore
-├── README.md
 ├── run_main.pbs
+├── .gitignore
+└─── README.md
 ```
 ---
 
