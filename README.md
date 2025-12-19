@@ -14,12 +14,25 @@
 # Project Structure
 
 ```bash
+├── scripts
+│   ├── functions_test.sh
+│   ├── mpi_test_timing.sh
+│   ├── run_main.sh
 ├── src
+│   ├── checksym_functions.c
 │   ├── main.c
 │   ├── main.h
+│   ├── transp_functions.c
 │   ├── utils.c
+├── tests
+│   ├── test_check_and_transp.c
+│   ├── test_timing.c
+│   ├── test_timing.h
+├── functions_test.pbs
+├── mpi_test_timing.pbs
 ├── .gitignore
 ├── README.md
+├── run_main.pbs
 ```
 ---
 
@@ -38,86 +51,64 @@ $ ssh <username>@hpc.unitn.it
 ```
 2. Clone the repository
 ```bash
-$ git clone https://github.com/martinadep/parallel_midterm
+$ git clone https://github.com/martinadep/parco_second
 ```
 3. Navigate to the folder
 ```bash
-$ cd parallel_midterm/
+$ cd parco_second/
 ```
 
 **!!! remember to change home directory path in each .pbs before submitting !!!**
 
 4. Run the following command:
 ```bash
-$ qsub midterm.pbs
+$ qsub run_main.pbs
 ```
 ## Additional tests
 This section shows how to run additional tests:
-- (1) testing different block sizes for block-based matrix transposition
-    - Block sizes are:
-        - 32x32
-        - 64x64
-        - 128x128
-        - 256x256
+- (1) testing two MPI approaches for matrix transposition with different number of processes
+    - Using MPI_Bcast()
+    - Using MPI_Datatype() and MPI_Scatterv()
 ```bash
-$ qsub test_block_size.pbs
+$ qsub mpi_test_timing.pbs
 ```
-- (2) testing different flags for implicit matrix transposition
-    - Tested flags are:
-        - O0
-        - O1
-        - O2
-        - O1 -march=native
-        - O2 -march=native
+- (2) assess correctness of matrix transposition and check symmetry functions
 
 ```bash
-$ qsub test_implicit_flags.pbs
+$ qsub functions_test.pbs
 ```
-- (3) testing different number of threads for omp optimized matrix transposition
-    - Tests are performed for:
-        - naive matrix transposition
-        - block-based matrix transposition
-        - block-based loop-unrolled matrix transposition
-
-```bash
-$ qsub test_omp.pbs
-```
-
 ## On your local machine
 
 ### Prerequisites
-- gcc compiler
+- mpich compiler
 
 ### Steps
 1. Clone the repository
 ```bash
-$ git clone https://github.com/martinadep/parallel_midterm
+$ git clone https://github.com/martinadep/parco_second
 ```
 2. Navigate the repository folder
 ```bash
-$ cd parallel_midterm/src
+$ cd parco_second/src
 ```
 3. Run the following commands:
 ```bash
-$ gcc main.c utils.c -std=c11 -lm -fopenmp -o bin/matrix_transposition
-$ ./matrix_transposition <select_matrix_size>
+$ mpicc -std=c11 main.c checksym_functions.c transp_functions.c utils.c -lm -fopenmp -o matrix_transposition.o
+$ ./matrix_transposition.o <select_matrix_size>
 ```
 
 ## Additional tests
 This section shows how to run additional tests
-1. Block-size, run the following commands:
+1. Testing two MPI approaches for matrix transposition with different number of processes
+    - Using MPI_Bcast()
+    - Using MPI_Datatype() and MPI_Scatterv()
 ```bash
-$ cd parallel_midterm/scripts/
-$ ./test_block_size.sh
+$ cd parco_second/scripts/
+$ ./mpi_test_timing.sh
 ```
-2. Implicit flags, run the following commands:
+2. Assess correctness of matrix transposition and check symmetry functions
+
 ```bash
-$ cd parallel_midterm/scripts/
-$ ./test_implicit_flags.sh
+$ cd parco_second/scripts/
+$ ./functions_test.sh
 ```
-3. Number of threads, run the following commands:
-```bash
-$ cd parallel_midterm/scripts/
-$ ./test_omp.sh
-```
---- parco_second

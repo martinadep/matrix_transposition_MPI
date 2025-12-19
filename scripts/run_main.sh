@@ -14,7 +14,7 @@ mkdir -p obj
 echo "Setup complete."
 
 # Compile the source files
-module load mpich-3.2
+#module load mpich-3.2
 mpicc -std=c11 -fopenmp $SOURCE_FILES -lm -o $OUTPUT_FILE
 if [ $? -eq 0 ]; then
     echo "Compiled  successfully : $OUTPUT_FILE"
